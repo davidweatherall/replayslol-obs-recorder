@@ -1,0 +1,18 @@
+{
+  "name": "obs-replayslol-plugin",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "license": "MIT",
+  "author": "Fan Platform Limited",
+  "scripts": {
+    "build": "webpack  --env production --config .webpack/webpack.config.js",
+    "start": "webpack  --env development --config .webpack/webpack.config.js"
+  },
+  "devDependencies": {
+    "@types/node": "^15.12.2",
+    "awesome-typescript-loader": "^5.2.1",
+    "typescript": "^4.3.2",
+    "webpack": "^5.38.1",
+    "webpack-cli": "^4.7.2"
+  }
+}
