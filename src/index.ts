@@ -23,7 +23,7 @@ class BrowserRecorder {
         this.startCallbackFunc = func;
     }
 
-    constructor(electron: any, window: any, logger: any) {
+    constructor(window: any, electron: any, logger: any) {
         this.screen = electron.remote.screen;
         this.logger = logger;
     }
