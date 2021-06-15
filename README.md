@@ -1,0 +1,1 @@
+need to also copy and paste the obs-studio-node folder from node_modules into the dist folder.
