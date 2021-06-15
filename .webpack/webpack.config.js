@@ -32,8 +32,13 @@ module.exports = env => {
                     test: /\.(ts|tsx)$/,
                     loader: "awesome-typescript-loader",
                 },
+                {
+                    test: /\.node$/,
+                    loader: 'node-loader',
+                },
             ]
         },
+        target:'node',
         watch: isDevelopment
     }
 }
