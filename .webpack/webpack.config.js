@@ -7,7 +7,8 @@ module.exports = env => {
 
     return {
         entry: {
-            index: path.join(rootDir, 'src', 'index.ts')
+            BrowserRecorder: path.join(rootDir, 'src', 'BrowserRecorder.ts'),
+            NodeRecorder: path.join(rootDir, 'src', 'NodeRecorder.ts')
         },
         mode: isDevelopment ? "development" : "production",
         node: {

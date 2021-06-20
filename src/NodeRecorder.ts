@@ -4,7 +4,7 @@ import path from "path";
 import fs from "fs";
 import mv from "mv";
 
-class BrowserRecorder {
+class NodeRecorder {
 
     filePath: string = "";
     videoName: string = "";
@@ -23,8 +23,8 @@ class BrowserRecorder {
         this.startCallbackFunc = func;
     }
 
-    constructor(window: any, electron: any, logger: any) {
-        this.screen = electron.remote.screen;
+    constructor(electron: any, logger: any) {
+        this.screen = electron.screen;
         this.logger = logger;
     }
 
@@ -185,6 +185,9 @@ class BrowserRecorder {
     }
 
     moveFile(loc: string, dest: string) {
+        this.logger('new move file');
+        this.logger(loc);
+        this.logger(dest);
         return new Promise<void>((resolve, reject) => {
             mv(loc, dest, (err) => {
                 if(err) reject(err);
@@ -210,9 +213,12 @@ class BrowserRecorder {
     deleteRemainingOBSVideos(videos?: string[]) {
         const allVideos = videos || this.getAllOBSVideos();
         const tmpVideoDir = this.vidDir;
+        this.logger('all videos', allVideos);
         allVideos.forEach(video => {
             const fullPath = path.join(tmpVideoDir, video);
+            this.logger('full path', fullPath);
             if(fullPath !== this.filePath && fs.existsSync(fullPath)) {
+                this.logger('deleting');
                 fs.unlinkSync(fullPath);
             }
         });
@@ -268,49 +274,9 @@ class BrowserRecorder {
 
     stopRecording() {
         this.logger('Stopping recording...');
-        this.logger(v4());
         osn.NodeObs.OBS_service_stopRecording();
         this.logger('Stopped?');
     }
 }
 
-class NodeRecorder {
-
-    filePath: string = "";
-
-    errCallbackFunc: (err: any) => void = console.log;
-    callbackFunc = () => {};
-    startCallbackFunc = () => {};
-
-    constructor(window: any, electron: any) {
-        //
-    }
-
-    setCallbackFunc(func: () => void) {
-        this.callbackFunc = func;
-    }
-
-    setStartCallback(func: () => void) {
-        this.startCallbackFunc = func;
-    }
-
-    startLoading() {
-        //
-    }
-
-    async startRecording(videoPath: string) {
-
-        this.filePath = videoPath;
-
-    }
-
-    stopRecording() {
-
-    }
-}
-
-module.exports = {
-    BrowserRecorder,
-    NodeRecorder
-};
-
+module.exports = { NodeRecorder };
