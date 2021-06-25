@@ -17,6 +17,7 @@ class NodeRecorder {
 
     setCallbackFunc(func: () => void) {
         this.callbackFunc = func;
+        this.logger("Setting new callback func", func);
     }
 
     setStartCallback(func: () => void) {
@@ -241,13 +242,15 @@ class NodeRecorder {
         this.deleteRemainingOBSVideos(mkvFiles);
     }
 
-    handleStopSignal() {
+    async handleStopSignal() {
         // rename to the original name.
         this.logger("Handling stop signal");
-        this.renameLatestOBSVideo();
+        await this.renameLatestOBSVideo();
+        this.callbackFunc();
     }
 
     handleOutputInfo(signalInfo: any) {
+        this.logger('Recieved signal:', signalInfo);
         switch (signalInfo.signal) {
             case "stop":
                 this.handleStopSignal();
@@ -262,6 +265,8 @@ class NodeRecorder {
         const vidDirParts = videoPath.split("\\");
         this.videoName = vidDirParts.pop() || "";
         this.vidDir = vidDirParts.join("\\");
+
+        this.logger('initialisation status', this.initialised);
         
         if (!this.initialised) this.initObs(this.vidDir);
       
