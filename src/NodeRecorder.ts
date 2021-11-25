@@ -4,6 +4,12 @@ import path from "path";
 import fs from "fs";
 import mv from "mv";
 
+
+const defaultOptions: RecorderOptions = {
+    sound: false,
+    quality: "medium",
+};
+
 class NodeRecorder {
 
     filePath: string = "";
@@ -11,6 +17,9 @@ class NodeRecorder {
     vidDir: string = "";
     screen: any;
     logger: any;
+    options = defaultOptions;
+    scene: any;
+    initialised: boolean = false;
 
     callbackFunc = () => {};
     startCallbackFunc = () => {};
@@ -24,18 +33,48 @@ class NodeRecorder {
         this.startCallbackFunc = func;
     }
 
-    constructor(electron: any, logger: any) {
+    constructor(electron: any, logger: any, options?: RecorderOptionsParam) {
         this.screen = electron.screen;
         this.logger = logger;
+        if(options) {
+            this.options = {
+                ...defaultOptions,
+                ...options
+            }
+        }
+        this.logger('options is', options);
+        this.logger('this.options is', this.options)
     }
 
     startLoading() {
         //
     }
-
     
-    scene: any;
-    initialised: boolean = false;
+    getVideoQualitySettings(): { width: number, height: number, fps: number, bitRate: number } {
+        switch (this.options.quality) {
+            case "low":
+                return {
+                    width: 854,
+                    height: 480,
+                    fps: 20,
+                    bitRate: 2500
+                }
+            case "medium":
+                return {
+                    width: 1280,
+                    height: 720,
+                    fps: 30,
+                    bitRate: 5000
+                }
+            case "high":
+                return {
+                    width: 1920,
+                    height: 1080,
+                    fps: 60,
+                    bitRate: 10000
+                }
+        }
+    }
 
     displayInfo() {
         const primaryDisplay = this.screen.getPrimaryDisplay();
@@ -53,34 +92,32 @@ class NodeRecorder {
     }
 
     setupScene() {
+
         const dummySource = osn.InputFactory.create("game_capture", "league game capture");
 
         const { physicalWidth, physicalHeight, aspectRatio } = this.displayInfo();
         
         const videoSources = dummySource.properties.get("window").details.items;
-        this.logger(videoSources);
       
         const realLeagueWindow = videoSources.find((window: any) => window.name === "[League of Legends.exe]: League of Legends (TM) Client");
       
-        this.logger('real leg', realLeagueWindow);
+        this.logger('league window', realLeagueWindow);
       
         const videoSource = osn.InputFactory.create("game_capture", "league game capture", {
           capture_mode: "any_fullscreen",
           window: realLeagueWindow.value
         });
-
-        // const videoSource = osn.InputFactory.create('monitor_capture', 'desktop-video');
-      
+     
         // Update source settings:
         let settings = videoSource.settings;
         settings['width'] = physicalWidth;
         settings['height'] = physicalHeight;
         videoSource.update(settings);
         videoSource.save();
-      
-        // Set output video size to 1920x1080
-        const outputWidth = 1920;
-        const outputHeight = Math.round(outputWidth / aspectRatio);
+
+        const { height, width } = this.getVideoQualitySettings();
+        const outputWidth = width;
+        const outputHeight = height;
         this.setSetting('Video', 'Base', `${outputWidth}x${outputHeight}`);
         this.setSetting('Video', 'Output', `${outputWidth}x${outputHeight}`);
         const videoScaleFactor = physicalWidth / outputWidth;
@@ -91,8 +128,33 @@ class NodeRecorder {
         sceneItem.scale = { x: 1.0/ videoScaleFactor, y: 1.0 / videoScaleFactor };
     }
 
+    getAudioDevices(type: string, subtype: string) {
+        const dummyDevice = osn.InputFactory.create(type, subtype, { device_id: 'does_not_exist' });
+        const devices = dummyDevice.properties.get('device_id').details.items.map(({ name, value }: any) => {
+          return { device_id: value, name,};
+        });
+        dummyDevice.release();
+        return devices;
+    };
+
     setupSources() {
         osn.Global.setOutputSource(1, this.scene);
+        
+        if(this.options.sound) {
+            this.setSetting('Output', 'Track1Name', 'Mixed: all sources');
+            let currentTrack = 2;
+          
+            this.getAudioDevices("wasapi_output_capture", "desktop-audio").forEach((metadata: any) => {
+                if (metadata.device_id !== 'default') return;
+                const source = osn.InputFactory.create("wasapi_output_capture", "desktop-audio", { device_id: metadata.device_id });
+                this.setSetting('Output', `Track${currentTrack}Name`, metadata.name);
+                source.audioMixers = 1 | (1 << currentTrack-1); // Bit mask to output to only tracks 1 and current track
+                osn.Global.setOutputSource(currentTrack, source);
+                currentTrack++;
+            });
+          
+            this.setSetting('Output', 'RecTracks', parseInt('1'.repeat(currentTrack-1), 2)); // Bit mask of used tracks: 1111 to use first four (from available six)
+        }
     }
 
     setSetting(category: any, parameter: any, value: any) {
@@ -162,6 +224,7 @@ class NodeRecorder {
             console.error('OBS init failure', errorMessage);
         }
 
+        const { fps, bitRate } = this.getVideoQualitySettings();
         
         this.logger('Configuring OBS');
         this.setSetting('Output', 'Mode', 'Advanced');
@@ -169,8 +232,8 @@ class NodeRecorder {
         this.setSetting('Output', 'RecEncoder', availableEncoders.slice(-1)[0] || 'x264');
         this.setSetting('Output', 'RecFilePath', vidPath);
         this.setSetting('Output', 'RecFormat', 'mkv');
-        this.setSetting('Output', 'VBitrate', 5000);
-        this.setSetting('Video', 'FPSCommon', 30);
+        this.setSetting('Output', 'VBitrate', bitRate);
+        this.setSetting('Video', 'FPSCommon', fps);
         this.logger('obs configured');
 
 
