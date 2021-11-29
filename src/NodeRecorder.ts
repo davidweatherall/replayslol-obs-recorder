@@ -44,6 +44,7 @@ class NodeRecorder {
         }
         this.logger('options is', options);
         this.logger('this.options is', this.options)
+        this.shutdown();
     }
 
     startLoading() {
@@ -141,6 +142,7 @@ class NodeRecorder {
         osn.Global.setOutputSource(1, this.scene);
         
         if(this.options.sound) {
+
             this.setSetting('Output', 'Track1Name', 'Mixed: all sources');
             let currentTrack = 2;
           
@@ -335,9 +337,21 @@ class NodeRecorder {
       
         this.logger('Starting recording...');
         osn.NodeObs.OBS_service_startRecording();
-      
+
         this.logger('Started?');
 
+    }
+
+    shutdown() {
+        this.logger("Shutting down OBS");
+        try {
+            osn.NodeObs.OBS_service_removeCallback();
+            osn.NodeObs.IPC.disconnect();
+            this.initialised = false;
+            this.logger("Successfully shutdown");
+        } catch(e) {
+            this.logger('Exception when shutting down OBS process: ' + e);
+        }
     }
 
     stopRecording() {
