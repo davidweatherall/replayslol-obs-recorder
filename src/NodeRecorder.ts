@@ -58,21 +58,21 @@ class NodeRecorder {
                     width: 854,
                     height: 480,
                     fps: 20,
-                    bitRate: 2500
+                    bitRate: 2000
                 }
             case "medium":
                 return {
                     width: 1280,
                     height: 720,
                     fps: 30,
-                    bitRate: 5000
+                    bitRate: 3500
                 }
             case "high":
                 return {
                     width: 1920,
                     height: 1080,
                     fps: 60,
-                    bitRate: 10000
+                    bitRate: 5000
                 }
         }
     }
